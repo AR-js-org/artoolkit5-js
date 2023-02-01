@@ -164,6 +164,13 @@ export default class ARToolkit {
       this._storeDataFile(data, file);
     };
 
+    //if (!files.length) return ok();
+
+    var path = url.split('/').slice(0, -1).join('/');
+    files = files.map(function (file) {
+        return [path + '/' + file, file]
+    });
+
     const promises = files.map(storeMarker, this);
     await Promise.all(promises);
 
