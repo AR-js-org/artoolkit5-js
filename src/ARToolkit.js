@@ -156,23 +156,29 @@ export default class ARToolkit {
     const target = '/multi_marker_' + this.multiMarkerCount++;
 
     const data = await Utils.fetchRemoteData(url);
-    const files = Utils.parseMultiFile(data);
+    let files = Utils.parseMultiFile(data);
 
     const storeMarker = async function (file) {
-      const markerUrl = (new URL(file, url)).toString();
+      console.log(file);
+      console.log(path);
+      const markerUrl = (new URL(file[1], 'http://127.0.0.1:5500' + path +'/')).toString();
+      //const markerUrl = (new URL(file[1], file[0])).toString();
+      console.log(markerUrl);
       const data = await Utils.fetchRemoteData(markerUrl);
-      this._storeDataFile(data, file);
+      this._storeDataFile(data, file[1]);
     };
 
-    //if (!files.length) return ok();
-
-    var path = url.split('/').slice(0, -1).join('/');
-    files = files.map(function (file) {
-        return [path + '/' + file, file]
-    });
-
-    const promises = files.map(storeMarker, this);
-    await Promise.all(promises);
+    if (files.length){
+      var path = url.split('/').slice(0, -1).join('/');
+      console.log(path);
+      files = files.map(function (file) {
+          return [path + '/' + file, file]
+      });
+      console.log(files);
+    }
+      const promises = files.map(storeMarker, this);
+      await Promise.all(promises);
+    
 
     const markerId = this.instance._addMultiMarker(arId, target);
     const markerNum = this.instance.getMultiMarkerNum(arId, markerId);
