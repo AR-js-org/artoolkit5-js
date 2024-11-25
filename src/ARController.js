@@ -96,6 +96,10 @@ export default class ARController {
     /**
      * @private
      */
+    this.multiMarkers = {};
+    /**
+     * @private
+     */
     this.transform_mat = new Float32Array(16);
     /**
     * @private
@@ -574,6 +578,24 @@ export default class ARController {
     }
     return obj;
   };
+
+  trackMultiMarkersId(id, markerWidth){
+    let obj = this.multiMarkers[id];
+    if (!obj) {
+      this.multiMarkers[id] = obj = {
+        inPrevious: false,
+        inCurrent: false,
+        multiMarkerId: id,
+        matrix: new Float64Array(12),
+        matrixGL_RH: new Float64Array(12),
+        markerWidth: markerWidth || this.defaultMarkerWidth
+      };
+    }
+    if (markerWidth) {
+      obj.markerWidth = markerWidth;
+    }
+    return obj;
+  }
 
   /**
    * Returns the number of multimarkers registered on this ARController.
