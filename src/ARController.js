@@ -762,10 +762,12 @@ export default class ARController {
   /**
    * Loads a multimarker from the given URL and calls the onSuccess callback with the UID of the marker.
    * @param {string} urlOrData - The URL of the multimarker pattern file to load.
-   * @returns {Promise<any[]>}
+   * @param {function} callback - The success callback it return the id of the marker and the number of markers in the multi configuration.
+   * @param {function} errorCallback - The error callback
+   * @returns {Promise}
    */
-  async loadMultiMarker(urlOrData) {
-    return await this.artoolkit.addMultiMarker(this.id, urlOrData);
+  async loadMultiMarker(urlOrData, callback, errorCallback) {
+    return await this.artoolkit.addMultiMarker(this.id, urlOrData, callback, errorCallback);
   };
 
   /**
