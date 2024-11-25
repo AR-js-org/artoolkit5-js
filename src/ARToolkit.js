@@ -7,11 +7,12 @@ const BARCODE_MARKER = 1;
 const NFT_MARKER = 2;
 
 export default class ARToolkit {
-  
+
   static get UNKNOWN_MARKER() { return UNKNOWN_MARKER; }
   static get PATTERN_MARKER() { return PATTERN_MARKER; }
   static get BARCODE_MARKER() { return BARCODE_MARKER; }
-  static get NFT_MARKER()     { return NFT_MARKER; }
+  static get NFT_MARKER() { return NFT_MARKER; }
+  static INSTANCE;
 
   /**
    * Deafult constructor.
@@ -46,6 +47,7 @@ export default class ARToolkit {
     // wrapper ARToolKitJS.cpp and introduced a global "artoolkit" variable.
     let scope = (typeof window !== 'undefined') ? window : global;
     scope['artoolkit'] = this;
+    ARToolkit.INSTANCE = this.instance;
 
     return this;
   }
@@ -81,8 +83,8 @@ export default class ARToolkit {
     });
 
     // expose constants
-    for(let co in this.instance) {
-      if(co.match(/^AR/)) {
+    for (let co in this.instance) {
+      if (co.match(/^AR/)) {
         this[co] = this.instance[co];
       }
     }
@@ -101,13 +103,13 @@ export default class ARToolkit {
 
     let data;
 
-    if(urlOrData instanceof Uint8Array) {
+    if (urlOrData instanceof Uint8Array) {
       // assume preloaded camera params
       data = urlOrData;
     } else {
       // fetch data via HTTP
       try { data = await Utils.fetchRemoteData(urlOrData); }
-      catch(error) { throw error; }
+      catch (error) { throw error; }
     }
 
     this._storeDataFile(data, target);
@@ -124,18 +126,18 @@ export default class ARToolkit {
    * @returns {number} 
    */
   async addMarker(arId, urlOrData) {
-    
+
     const target = '/marker_' + this.markerCount++;
 
     let data;
 
-    if(urlOrData.indexOf("\n") !== -1) {
+    if (urlOrData.indexOf("\n") !== -1) {
       // assume text from a .patt file
       data = Utils.string2Uint8Data(urlOrData);
     } else {
       // fetch data via HTTP
       try { data = await Utils.fetchRemoteData(urlOrData); }
-      catch(error) { throw error; }
+      catch (error) { throw error; }
     }
 
     this._storeDataFile(data, target);
@@ -149,42 +151,33 @@ export default class ARToolkit {
    * It is preferred to use loadMultiMarker instead with a new ARcontroller instance.
    * @param {number} arId 
    * @param {string} url 
-   * @returns {Array}
+   * @param {function} callback called on success, it return the id of the marker and the number of markers in the config file.
+   * @param {function} onError callback
+   * @returns {Promise}
    */
-  async addMultiMarker(arId, url) {
+  async addMultiMarker(arId, url, callback, onError) {
+    const filename = '/multi_marker_' + this.multiMarkerCount++;
 
-    const target = '/multi_marker_' + this.multiMarkerCount++;
+    ARToolkit.ajax(url, filename, function (bytes) {
 
-    const data = await Utils.fetchRemoteData(url);
-    let files = Utils.parseMultiFile(data);
+      let files = Utils.parseMultiFile(bytes);
 
-    const storeMarker = async function (file) {
-      console.log(file);
-      console.log(path);
-      const markerUrl = (new URL(file[1], 'http://127.0.0.1:5500' + path +'/')).toString();
-      //const markerUrl = (new URL(file[1], file[0])).toString();
-      console.log(markerUrl);
-      const data = await Utils.fetchRemoteData(markerUrl);
-      this._storeDataFile(data, file[1]);
-    };
+      function ok() {
+        const markerID =  ARToolkit.INSTANCE._addMultiMarker(arId, filename);
+        const markerNum =  ARToolkit.INSTANCE.getMultiMarkerNum(arId, markerID);
+        if (callback) callback(markerID, markerNum);
+      }
 
-    if (files.length){
-      var path = url.split('/').slice(0, -1).join('/');
-      console.log(path);
+      if (!files.length) return ok();
+
+      const path = url.split('/').slice(0, -1).join('/');
       files = files.map(function (file) {
-          return [path + '/' + file, file]
+        return [path + '/' + file, file]
       });
-      console.log(files);
-    }
-      const promises = files.map(storeMarker, this);
-      await Promise.all(promises);
-    
-
-    const markerId = this.instance._addMultiMarker(arId, target);
-    const markerNum = this.instance.getMultiMarkerNum(arId, markerId);
-
-    return [markerId, markerNum];
+      ARToolkit.ajaxDependencies(files, ok);
+    }, function (error) { if (onError) onError(error) });
   }
+
 
   /**
    * Add a NFT marker file. You need to provide the url of the marker without the extension. 
@@ -215,6 +208,51 @@ export default class ARToolkit {
   //----------------------------------------------------------------------------
 
   // implementation
+  /**
+   * ajax function used by the addMultiMarker method
+   */
+  static ajax(url, target, callback, errorCallback, prefix) {
+    const oReq = new XMLHttpRequest();
+    oReq.open('GET', url, true);
+    oReq.responseType = 'arraybuffer'; // blob arraybuffer
+    const writeByteArrayToFS = (target, byteArray, callback, prefix) => {
+      ARToolkit.INSTANCE.FS.writeFile(target, byteArray, { encoding: 'binary' });
+      // console.log('FS written', target);
+      callback(byteArray, prefix);
+    }
+
+    oReq.onload = function () {
+      if (this.status == 200) {
+        // console.log('ajax done for ', url);
+        const arrayBuffer = oReq.response;
+        const byteArray = new Uint8Array(arrayBuffer);
+        writeByteArrayToFS(target, byteArray, callback, prefix);
+      }
+      else {
+        errorCallback(this.status);
+      }
+    };
+
+    oReq.send();
+  }
+
+  /**
+   * ajax dependencies used by the addMultiMarker method
+   * @param {*} files 
+   * @param {*} callback
+   * @returns {void}
+   */
+  static ajaxDependencies(files, callback) {
+    const next = files.pop();
+    if (next) {
+      ARToolkit.ajax(next[0], next[1], function () {
+        ARToolkit.ajaxDependencies(files, callback);
+      });
+    } else {
+      callback();
+    }
+  }
+
 
   _storeDataFile(data, target) {
     // FS is provided by emscripten
