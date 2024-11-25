@@ -25,7 +25,7 @@ export default class ARToolkit {
     this.markerCount = 0;
     this.multiMarkerCount = 0;
     this.cameraCount = 0;
-    this.version = '0.3.0'
+    this.version = '0.3.1'
     console.info('ARToolkit ', this.version)
   }
   //----------------------------------------------------------------------------
