@@ -4,7 +4,7 @@ export default class Utils {
      * @param {string} url
      * @returns
      */
-    static fetchRemoteData(url: string): Promise<Uint8Array>;
+    static fetchRemoteData(url: string): Promise<Uint8Array<any>>;
     /**
      * Function to retrieve Uint8Array data from a string.
      * @param {string} string

@@ -82,6 +82,10 @@ export default class ARController {
     /**
      * @private
      */
+    private multiMarkers;
+    /**
+     * @private
+     */
     private transform_mat;
     /**
     * @private
@@ -233,6 +237,7 @@ export default class ARController {
      * @return {Object} The marker tracking object.
      */
     trackNFTMarkerId(id: number, markerWidth: number): any;
+    trackMultiMarkersId(id: any, markerWidth: any): any;
     /**
      * Returns the number of multimarkers registered on this ARController.
      * @return {number} Number of multimarkers registered.
@@ -298,9 +303,11 @@ export default class ARController {
     /**
      * Loads a multimarker from the given URL and calls the onSuccess callback with the UID of the marker.
      * @param {string} urlOrData - The URL of the multimarker pattern file to load.
-     * @returns {Promise<any[]>}
+     * @param {function} callback - The success callback it return the id of the marker and the number of markers in the multi configuration.
+     * @param {function} errorCallback - The error callback
+     * @returns {Promise}
      */
-    loadMultiMarker(urlOrData: string): Promise<any[]>;
+    loadMultiMarker(urlOrData: string, callback: Function, errorCallback: Function): Promise<any>;
     /**
      * Loads an NFT marker from the given URL or data string
      * @param {string} urlOrData - The URL prefix or data of the NFT markers to load.
@@ -731,5 +738,5 @@ export default class ARController {
      */
     private _copyImageToHeap;
 }
-import ARToolkit from "./ARToolkit";
+import ARToolkit from './ARToolkit';
 //# sourceMappingURL=ARController.d.ts.map
