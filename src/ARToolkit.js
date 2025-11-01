@@ -1,5 +1,6 @@
 import ModuleLoader from './ModuleLoader';
 import Utils from './Utils';
+import pkg from './../package.json'
 
 const UNKNOWN_MARKER = -1;
 const PATTERN_MARKER = 0;
@@ -25,7 +26,7 @@ export default class ARToolkit {
     this.markerCount = 0;
     this.multiMarkerCount = 0;
     this.cameraCount = 0;
-    this.version = '0.3.1'
+    this.version = pkg.version;
     console.info('ARToolkit ', this.version)
   }
   //----------------------------------------------------------------------------
